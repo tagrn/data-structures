@@ -24,12 +24,13 @@ class HashList<T> {
   }
 
   private adjustTargetIndex(index: number): number {
+    let tmpIndex = index
     for (const x of this.adjustment) {
       if (index >= x) {
-        index++;
+        tmpIndex++;
       }
     }
-    return index;
+    return tmpIndex;
   }
 
   private rearrangeIndices(): void {
