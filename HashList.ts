@@ -51,7 +51,7 @@ class HashList<T> {
   private rearrangeIndices(): void {
     if (
       this.getCount < this.threshold &&
-      this.removedIndices.length < this.threshold / 50
+      this.removedIndices.length < this.threshold / 20
     ) {
       return;
     }
@@ -72,35 +72,66 @@ class HashList<T> {
     this.removedIndices = [];
   }
 
-  add(value: T, index: number = this.size): void {
+  set(value: T, index: number): void {
     this.rearrangeIndices();
-    if (!this.isValidIndex(index, 1)) {
+    if (!this.isValidIndex(index)) {
       throw new Error('out of index');
     }
     const adjustedIndex = this.adjustTargetIndex(index);
     this.indices[adjustedIndex] = value;
-    if (index == this.size) {
-      this.size++;
+  }
+
+  add(value: T, index: number = this.size): void {
+    if (!this.isValidIndex(index, 1)) {
+      throw new Error('out of index');
     }
+
+    this.rearrangeIndices();
+    const adjustedIndex = this.adjustTargetIndex(index);
+    if (this.adjustTargetIndex(index - 1) === adjustedIndex - 1) {
+      let before = this.indices[adjustedIndex];
+      const maxLength = this.size + this.removedIndices.length + 1;
+      for (let i = adjustedIndex + 1; i < maxLength; i++) {
+        if (this.indices[i]) {
+          const tmp = this.indices[i];
+          this.indices[i] = before;
+          before = tmp;
+        } else {
+          this.indices[i] = before;
+          if (i <= this.size + this.removedIndices.length) {
+            this.removedIndices.splice(bisect(i, this.removedIndices), 1);
+          }
+          break;
+        }
+      }
+      this.indices[adjustedIndex] = value;
+      this.size++;
+      return;
+    }
+
+    const targetIndex = adjustedIndex - 1;
+    this.removedIndices.splice(bisect(targetIndex, this.removedIndices), 1);
+    this.indices[targetIndex] = value;
+    this.size++;
   }
 
   get(index: number): T {
-    this.rearrangeIndices();
-    this.getCount++;
-
     if (!this.isValidIndex(index)) {
       throw new Error('out of index');
     }
+
+    this.rearrangeIndices();
+    this.getCount++;
     const adjustedIndex = this.adjustTargetIndex(index);
     return this.indices[adjustedIndex];
   }
 
   remove(index: number): void {
-    this.rearrangeIndices();
     if (!this.isValidIndex(index)) {
       throw new Error('out of index');
     }
 
+    this.rearrangeIndices();
     const adjustedIndex = this.adjustTargetIndex(index);
     delete this.indices[adjustedIndex];
     const location = bisect(adjustedIndex, this.removedIndices);
@@ -133,13 +164,32 @@ hashList.add(16, 1);
 hashList.add(5);
 hashList.add(55, 2);
 hashList.add(66);
-console.log(hashList.size === 5);
+console.log(hashList.size === 7);
 console.log(hashList.get(0) === 1);
 console.log(hashList.get(1) === 16);
 console.log(hashList.get(2) === 55);
 hashList.remove(2);
-hashList.remove(1); // execute rearrange logic
+hashList.remove(1);
 hashList.remove(0);
-console.log(hashList.size === 2);
-console.log(hashList.get(1) === 66);
-console.log(hashList.get(0) === 5);
+hashList.set(100, 2);
+console.log(hashList.size === 4);
+console.log(hashList.get(3) === 66);
+console.log(hashList.get(2) === 100);
+console.log(hashList.get(0) === 1);
+hashList.add(16);
+hashList.add(5);
+console.log(hashList.get(5) === 5);
+hashList.add(66);
+hashList.remove(0);
+hashList.remove(5);
+console.log(hashList.get(4) === 5);
+hashList.remove(1);
+hashList.add(16);
+hashList.add(5);
+hashList.add(66);
+hashList.remove(0);
+console.log(hashList.get(0) === 66);
+hashList.remove(0); // execute rearrange logic
+hashList.remove(1);
+console.log(hashList.size === 4);
+console.log(hashList.get(0) === 16);
